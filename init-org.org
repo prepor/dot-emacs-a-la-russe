@@ -1,0 +1,797 @@
+* Инициализация
+** Пути
+#+BEGIN_SRC emacs-lisp
+  (setq user-emacs-directory "~/.emacs.d")
+  (add-to-list 'load-path "~/.emacs.d/load")
+#+END_SRC
+*** el-get
+#+BEGIN_SRC emacs-lisp
+  (add-to-list 'load-path "~/.emacs.d/el-get/el-get")
+  (unless (require 'el-get nil 'noerror)
+    (with-current-buffer
+        (url-retrieve-synchronously
+         "https://raw.github.com/dimitri/el-get/master/el-get-install.el")
+      (let (el-get-master-branch)
+        (goto-char (point-max))
+        (eval-print-last-sexp))))
+  (add-to-list 'el-get-recipe-path "~/.emacs.d/el-get-user/recipes")
+  ;; (setq el-get-user-package-directory "~/.emacs.d/packages/")
+  #+END_SRC
+** custom.el
+Должен быть только один и держим его отдельно
+#+BEGIN_SRC emacs-lisp
+  (setq custom-file "~/.emacs.d/custom.el")
+  (load custom-file)
+#+END_SRC
+* Обшие настройки
+- Всегда обновлять буферы с диска
+#+BEGIN_SRC emacs-lisp
+(global-auto-revert-mode 1)
+#+END_SRC
+- Не показывать стартовый скрин
+#+BEGIN_SRC emacs-lisp
+(setq inhibit-startup-screen +1)
+#+END_SRC
+- Для emacsclient нужно стартовать сервер
+#+BEGIN_SRC emacs-lisp
+(server-start)
+#+END_SRC
+- Ширина текста в 90 и перенос
+#+BEGIN_SRC emacs-lisp
+(set-default 'fill-column 90)
+(setq word-wrap t)
+#+END_SRC
+- Использовать системный буфер при вставке/копировании
+#+BEGIN_SRC emacs-lisp
+(setq x-select-enable-clipboard t)
+#+END_SRC
+- Не создавать фреймы при внешних вызовах
+#+BEGIN_SRC emacs-lisp
+(setq ns-pop-up-frames nil)
+#+END_SRC
+- Никаких табов!
+#+BEGIN_SRC emacs-lisp
+(setq-default indent-tabs-mode nil)
+#+END_SRC
+- Используем емаксовое переключение раскладок. Это позволяет использовать обычные шорткаты во всех раскладках
+#+BEGIN_SRC emacs-lisp
+(set-input-method "russian-computer")
+#+END_SRC
+** Шрифты
+#+BEGIN_SRC emacs-lisp
+(set-face-attribute 'default nil
+                    :family "Inconsolata"
+                    :height 140
+                    :weight 'normal
+                    :width 'normal)
+(when (functionp 'set-fontset-font)
+  (set-fontset-font "fontset-default"
+                    'unicode
+                    (font-spec :family "DejaVu Sans Mono"
+                               :width 'normal
+                               :size 12.4
+                               :weight 'normal)))
+#+END_SRC
+** ido везде
+#+BEGIN_SRC emacs-lisp
+(ido-mode t)
+(setq ido-auto-merge-work-directories-length -1)
+(ido-everywhere t)
+#+END_SRC
+** Бекап и автосейв файлы емакса
+Емакс любит всюду гадить своими файликами. Пытаемся отучить его от этого. (сейчас почему то не работает)
+#+BEGIN_SRC emacs-lisp
+(setq backup-directory-alist
+      `((".*" . ,temporary-file-directory)))
+(setq auto-save-file-name-tranesforms
+      `((".*" ,temporary-file-directory t)))
+#+END_SRC
+** Задизейбленные функции
+#+BEGIN_SRC emacs-lisp
+  (put 'narrow-to-region 'disabled nil)
+  (put 'upcase-region 'disabled nil)
+  (put 'LaTeX-narrow-to-environment 'disabled nil)
+#+END_SRC
+* Библиотека
+** os x нотификации
+Прилеплять или нет можно менять только (10.9) в настройках оси: System Preferences > Notifications
+#+BEGIN_SRC emacs-lisp
+  (defun my/notification (text &optional title)
+      (do-applescript
+       (format "display notification \"%s\" with title \"%s\" sound name \"Ping\""
+               text (if title title "Emacs"))))
+#+END_SRC
+** Скопировать путь до текущего буфера
+#+BEGIN_SRC emacs-lisp
+  (defun my/copy-file-name-to-clipboard ()
+    "Copy the current buffer file name to the clipboard."
+    (interactive)
+    (let ((filename (if (equal major-mode 'dired-mode)
+                        default-directory
+                      (buffer-file-name))))
+      (when filename
+        (kill-new filename)
+        (message "Copied buffer file name '%s' to the clipboard." filename))))
+#+END_SRC
+* Пакеты
+** Кастомные рецепты
+#+BEGIN_SRC emacs-lisp
+  (setq el-get-sources
+        '((:name elisp-slime-nav
+                 :type github
+                 :pkgname "purcell/elisp-slime-nav"
+                 :features elisp-slime-nav
+                 :after (progn
+                          (add-hook 'emacs-lisp-mode-hook
+                                    (lambda () (elisp-slime-nav-mode t)))))
+          (:name cider
+                 :checkout "ff0a4dd22b6cdb2b2e80bd6d86bae37f39551e32")
+          (:name clojure-mode
+                 :checkout "master")
+          (:name smart-mode-line
+                 :type github
+                 :pkgname "Bruce-Connor/smart-mode-line"
+                 :features smart-mode-line)
+          (:name less-css-mode
+                 :type github
+                 :pkgname "purcell/less-css-mode")
+          ;; с официальным не совместим clj-refactor.el там куда то делся paredit-move-forward
+          (:name paredit
+                 :type github
+                 :pkgname "emacsmirror/paredit")
+          (:name org-jira
+                 :type github
+                 :pkgname "baohaojun/org-jira")))
+#+END_SRC
+** Полный список рецептов
+#+BEGIN_SRC emacs-lisp
+  (setq dim-packages
+        (append
+         '(yasnippet smex exec-path-from-shell auto-complete pkg-info projectile ack-and-a-half
+                     org-mode
+                     idomenu undo-tree key-chord ace-jump-mode
+                     auto-complete rainbow-delimiters smartparens
+                     ac-nrepl htmlize
+                     cl-lib magit
+                     rvm inf-ruby rspec-mode
+                     multiple-cursors clj-refactor
+                     yaml-mode flycheck helm emmet-mode mmm-mode auctex)
+         (mapcar 'el-get-as-symbol (mapcar 'el-get-source-name el-get-sources))))
+#+END_SRC
+** Загрузка
+- el-get
+#+BEGIN_SRC emacs-lisp
+  (el-get 'sync dim-packages)
+#+END_SRC
+
+- slamhound
+Почему то не сработало через рецепты...
+#+BEGIN_SRC emacs-lisp
+  (load "slamhound")
+#+END_SRC
+** Org mode
+*** Общее
+- нужные пакеты
+#+BEGIN_SRC emacs-lisp
+  (require 'calendar)
+#+END_SRC
+- пути
+#+BEGIN_SRC emacs-lisp
+  (setq org-directory "~/Dropbox/notes")
+  (setq org-default-notes-file (concat org-directory "/captures.org"))
+  (setq org-mobile-inbox-for-pull "~/Dropbox/notes/mobile.org")
+  (setq org-mobile-directory "~/Dropbox/Apps/MobileOrg")
+#+END_SRC
+- Визуализировать уровни вложенности
+#+BEGIN_SRC emacs-lisp
+  (setq org-startup-indented t)
+#+END_SRC
+- При инлайновом отображании изображений уменьшать их
+#+BEGIN_SRC emacs-lisp
+  ;; TODO вычислять автоматом исходя из ширины окна
+  (setq org-image-actual-width 500)
+#+END_SRC
+*** Праздники
+#+BEGIN_SRC emacs-lisp
+  (setq calendar-holidays
+        '((holiday-fixed 5 1 "Праздник Весны и Труда")
+          (holiday-fixed 5 9 "День Победы")
+          (holiday-fixed 6 12 "День России")
+          (holiday-fixed 11 4 "День народного единства")))
+#+END_SRC
+*** Babel
+**** Clojure
+#+BEGIN_SRC emacs-lisp
+(require 'ob-clojure)
+(setq org-babel-clojure-backend 'cider)
+#+END_SRC
+**** ditaa
+#+BEGIN_SRC emacs-lisp
+(setq org-ditaa-jar-path "~/.emacs.d/ditaa0_9.jar")
+#+END_SRC
+**** plantuml
+#+BEGIN_SRC emacs-lisp
+(setq org-plantuml-jar-path
+      (expand-file-name "~/.emacs.d/plantuml.jar"))
+#+END_SRC
+**** Init
+- Инициализировать языки
+#+BEGIN_SRC emacs-lisp
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '(
+     (sql . t)
+     (emacs-lisp . t)
+     (sh . t)
+     (R . t)
+     (ruby . t)
+     (python . t)
+     (clojure . t)
+     (ditaa . t)
+     (plantuml . t)
+     ))
+#+END_SRC
+- Подсвечивать как надо каждый язык
+#+BEGIN_SRC emacs-lisp
+  (setq org-src-fontify-natively t)
+#+END_SRC
+- Не спрашивать каждый раз при исполнении кода
+#+BEGIN_SRC emacs-lisp
+  (setq org-confirm-babel-evaluate nil)
+  #+END_SRC
+*** Напоминалки
+Если тудушка зашедулено на определенное время выводить напоминалки через системный Notification Center
+- формируем напоминалки из файлов в agenda
+#+BEGIN_SRC emacs-lisp
+(defun my/org-agenda-to-appt ()
+  (interactive)
+  (setq appt-time-msg-list nil)
+  (org-agenda-to-appt))
+(add-hook 'org-finalize-agenda-hook 'my/org-agenda-to-appt 'append)
+(my/org-agenda-to-appt)
+(appt-activate t)
+#+END_SRC
+- напоминалки формируются только на текущий день, так что в полночь их надо пересчитывать
+#+BEGIN_SRC emacs-lisp
+(run-at-time "24:01" nil 'my/org-agenda-to-appt)
+#+END_SRC
+- мы используем системные звуки и емаксовые бипы ни к чему
+#+BEGIN_SRC emacs-lisp
+(setq appt-audible nil)
+#+END_SRC
+- собственно функция показывающая системную нотифайку
+#+BEGIN_SRC emacs-lisp
+  (defadvice appt-disp-window (after osx-notification
+                                     (min-to-app new-time appt-msg))
+    (my/notification (format "%s: %s min. (%s)" appt-msg min-to-app new-time)
+                     "Appointment"))
+  (ad-activate 'appt-disp-window)
+#+END_SRC
+*** latex
+-
+#+BEGIN_SRC emacs-lisp
+(require 'ox-latex)
+#+END_SRC
+**** Подсветка кода
+pip install pygments
+http://joat-programmer.blogspot.ru/2013/07/org-mode-version-8-and-pdf-export-with.html
+#+BEGIN_SRC emacs-lisp
+(setq org-latex-listings 'minted)
+#+END_SRC
+**** Дефолтные пакеты и шрифты
+#+BEGIN_SRC emacs-lisp
+(setq org-latex-packages-alist
+      '(("" "fontspec")
+        "\\defaultfontfeatures{Ligatures=TeX}"
+        "\\setmainfont{Linux Libertine O}"
+        "\\setmonofont{Inconsolata}"
+        "\\newfontfamily{\\cyrillicfontsf}{Linux Libertine O}"
+        "\\newfontfamily{\\cyrillicfonttt}{DejaVu Sans Mono}"
+        ("" "polyglossia")
+        "\\setmainlanguage{russian}"
+        "\\setotherlanguage{english}"
+        ("" "xunicode")
+        ("" "minted")))
+#+END_SRC
+
+inputenc и fontenc убираем из дефолтных пакетов
+
+#+BEGIN_SRC emacs-lisp
+  (setq org-latex-default-packages-alist
+        '((""     "fixltx2e"  nil)
+          (""     "graphicx"  t)
+          (""     "longtable" nil)
+          (""     "float"     nil)
+          (""     "wrapfig"   nil)
+          (""     "rotating"  nil)
+          ("normalem" "ulem"  t)
+          (""     "amsmath"   t)
+          (""     "textcomp"  t)
+          (""     "marvosym"  t)
+          (""     "wasysym"   t)
+          (""     "amssymb"   t)
+          (""     "hyperref"  nil)
+          "\\tolerance=1000"))
+#+END_SRC
+**** pdf-рендеринг
+-shell-escape нужен для работы minted
+#+BEGIN_SRC emacs-lisp
+  (setq org-latex-pdf-process
+        '("xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+          "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"
+          "xelatex -shell-escape -interaction nonstopmode -output-directory %o %f"))
+#+END_SRC
+*** Entities
+Очень тупо определяем кирилические символы со всякими ударениями. Лучшего способа сделать это с экспортов в латек не нашел
+#+BEGIN_SRC emacs-lisp
+  (setq org-entities-user
+        '(("rao" "\\'{о}" nil "о" "о" "о" "о")))
+#+END_SRC
+*** Shortcuts
+#+BEGIN_SRC emacs-lisp
+(add-hook 'org-mode-hook
+          '(lambda ()
+             (local-set-key (kbd "M-I") 'org-toggle-inline-images)))
+(define-key org-mode-map (kbd "C-c h") 'helm-org-headlines)
+#+END_SRC
+** SQL
+Быстрое подключения к любимым эскуэлям
+*** Список коннектов
+#+BEGIN_SRC emacs-lisp
+  (setq sql-connection-alist
+        '((production
+           (sql-name "production")
+           (sql-product 'postgres)
+           (sql-server "10.19.0.90")
+           (sql-user "flocktory")
+           (sql-password "flocktory")
+           (sql-database "flocktory_production")
+           (sql-port 5432))
+          (development
+           (sql-name "development")
+           (sql-product 'postgres)
+           (sql-server "localhost")
+           (sql-user "flocktory")
+           (sql-password "flocktory")
+           (sql-database "flocktory")
+           (sql-port 5432))))
+#+END_SRC
+*** Пресеты
+#+BEGIN_SRC emacs-lisp
+  (defun sql-pool-production ()
+    (interactive)
+    (sql-connect-preset 'production))
+
+  (defun sql-pool-development ()
+    (interactive)
+    (sql-connect-preset 'development))
+#+END_SRC
+*** Библиотека
+#+BEGIN_SRC emacs-lisp
+  ;; this makes all it all happen via M-x sql-pool-host1_db1, etc.
+  (defun sql-connect-preset (name)
+    "Connect to a predefined SQL connection listed in `sql-connection-alist'"
+    (eval `(let ,(cdr (assoc name sql-connection-alist))
+             (flet ((sql-get-login (&rest what)))
+               (sql-product-interactive sql-product name)))))
+
+  ;; names the buffer *SQL: <host>_<db>, which is easier to
+  ;; find when you M-x list-buffers, or C-x C-b
+  (defun sql-make-smart-buffer-name ()
+    "Return a string that can be used to rename a SQLi buffer.
+    This is used to set `sql-alternate-buffer-name' within
+    `sql-interactive-mode'."
+    (or (and (boundp 'sql-name) sql-name)
+        (concat (if (not(string= "" sql-server))
+                    (concat
+                     (or (and (string-match "[0-9.]+" sql-server) sql-server)
+                         (car (split-string sql-server "\\.")))
+                     "/"))
+                sql-database)))
+#+END_SRC
+*** Хук
+При создании буфера давать ему человекопонятное имя
+#+BEGIN_SRC emacs-lisp
+  (add-hook 'sql-interactive-mode-hook
+            (lambda ()
+              (setq sql-alternate-buffer-name (sql-make-smart-buffer-name))
+              (sql-rename-buffer)))
+#+END_SRC
+** ac-nrepl
+#+BEGIN_SRC emacs-lisp
+  (add-hook 'cider-repl-mode-hook 'ac-nrepl-setup)
+  (add-hook 'cider-mode-hook 'ac-nrepl-setup)
+  (eval-after-load "auto-complete"
+    '(add-to-list 'ac-modes 'cider-repl-mode))
+  (eval-after-load "cider"
+    '(progn
+       (define-key cider-repl-mode-map (kbd "C-c C-d") 'ac-nrepl-popup-doc)
+       (define-key cider-mode-map (kbd "C-c C-d") 'ac-nrepl-popup-doc)))
+#+END_SRC
+** auctex
+#+BEGIN_SRC emacs-lisp
+  (setq-default TeX-engine 'xetex)
+  ;;http://stackoverflow.com/questions/3300497/using-minted-source-code-latex-package-with-emacs-auctex/3308880#3308880
+  (eval-after-load "tex"
+    '(setcdr (assoc "LaTeX" TeX-command-list)
+          '("%`%l%(mode) -shell-escape%' %t"
+            TeX-run-TeX nil (latex-mode doctex-mode) :help "Run LaTeX")))
+
+  (setq TeX-auto-save t)
+  (setq TeX-parse-self t)
+  (setq-default TeX-master nil)
+  (add-hook 'LaTeX-mode-hook 'visual-line-mode)
+  (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+  (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
+  (setq TeX-PDF-mode t)
+#+END_SRC
+** autocomplete
+#+BEGIN_SRC emacs-lisp
+  (require 'auto-complete)
+
+  (ac-flyspell-workaround)
+
+  (global-auto-complete-mode t)
+  (setq ac-auto-show-menu t)
+  (setq ac-dwim t)
+  (setq ac-use-menu-map t)
+  (setq ac-quick-help-delay 1)
+  (setq ac-quick-help-height 60)
+  (setq ac-disable-inline t)
+  (setq ac-show-menu-immediately-on-auto-complete t)
+  (setq ac-auto-start nil)
+  (setq ac-candidate-menu-min 0)
+
+  (ac-set-trigger-key "TAB")
+
+  (dolist (mode '(magit-log-edit-mode log-edit-mode org-mode text-mode haml-mode
+                  sass-mode yaml-mode csv-mode espresso-mode haskell-mode
+                  nxml-mode sh-mode smarty-mode clojure-mode
+                  lisp-mode textile-mode markdown-mode tuareg-mode))
+    (add-to-list 'ac-modes mode))
+#+END_SRC
+** cider
+*** Библиотека
+#+BEGIN_SRC emacs-lisp
+  (defun my/nrepl-refresh ()
+    (interactive)
+    (set-buffer "*nrepl*")
+    (goto-char (point-max))
+    (insert "(clojure.tools.namespace.repl/refresh)")
+    (nrepl-return))
+
+  (defun my/nrepl-reset ()
+    (interactive)
+    (save-some-buffers nil (lambda () (equal major-mode 'clojure-mode)))
+    (cider-tooling-eval "((ns-resolve 'user.my 'reset))"
+                        (cider-repl-handler (cider-current-repl-buffer))))
+
+  (defun my/nrepl-refresh ()
+    (interactive)
+    (save-some-buffers nil (lambda () (equal major-mode 'clojure-mode)))
+    (cider-tooling-eval "(clojure.tools.namespace.repl/refresh)"
+                        (cider-repl-handler (cider-current-repl-buffer))))
+
+  (defun my/cider-repl-mode-hooks ()
+    (my/turn-on 'rainbow-delimiters
+                ;; 'highlight-parentheses
+                )
+    (setq cider-repl-popup-stacktraces t)
+    (define-key cider-mode-map (kbd "C-c C-n") 'my/nrepl-reset))
+
+  (defun my/cider-mode-hooks ()
+    "Clojure specific setup code that should only be run when we
+    have a CIDER REPL connection"
+    (cider-turn-on-eldoc-mode)
+    (define-key cider-repl-mode-map (kbd "C-c C-n") 'my/nrepl-reset)
+    (define-key cider-repl-mode-map (kbd "C-c C-r") 'my/nrepl-refresh)
+    (define-key cider-mode-map (kbd "C-c C-r") 'my/nrepl-refresh))
+#+END_SRC
+*** Хуки
+#+BEGIN_SRC emacs-lisp
+  (add-hook 'cider-mode-hook
+            'my/cider-mode-hooks)
+
+  (add-hook 'cider-repl-mode-hook
+            'my/cider-repl-mode-hooks)
+#+END_SRC
+** clj-refactor
+#+BEGIN_SRC emacs-lisp
+  (add-hook 'clojure-mode-hook (lambda ()
+                                 (clj-refactor-mode 1)
+  (cljr-add-keybindings-with-prefix "C-c C-]")))
+#+END_SRC
+** clojure-mode
+#+BEGIN_SRC emacs-lisp
+  (require 'clojure-mode)
+  (define-clojure-indent
+
+    ;;compojure
+    (defroutes 'defun)
+    (GET 2)
+    (POST 2)
+    (PUT 2)
+    (DELETE 2)
+    (HEAD 2)
+    (ANY 2)
+    (context 2)
+
+    ;; http-kit
+    (schedule-task 1)
+
+    (go-loop 1)
+    (thread-loop 1))
+#+END_SRC
+** exec-path-from-shell
+Подгружает PATH из окружения
+#+BEGIN_SRC emacs-lisp
+  (when (memq window-system '(mac ns))
+    (exec-path-from-shell-initialize))
+#+END_SRC
+** flycheck
+#+BEGIN_SRC emacs-lisp
+  (setq flycheck-checkers '(ruby bash))
+  (global-flycheck-mode +1)
+#+END_SRC
+** helm
+#+BEGIN_SRC emacs-lisp
+  (require 'helm-config)
+#+END_SRC
+helm-compile-source--helm-headline, которую использует например helm-org, зависит от этого файлика но сейчас не влючает в себя https://github.com/emacs-helm/helm/pull/531
+#+BEGIN_SRC emacs-lisp
+  (require 'helm-regexp)
+#+END_SRC
+
+** mmm
+#+BEGIN_SRC emacs-lisp
+  (require 'mmm-auto)
+
+  (setq mmm-global-mode 'maybe)
+  (mmm-add-mode-ext-class 'html-mode nil 'html-js)
+  (mmm-add-mode-ext-class 'html-mode nil 'html-css)
+#+END_SRC
+** org-jira
+пока не работает :(
+#+BEGIN_SRC emacs-lisp
+  (setq jiralib-url "http://flocktory.atlassian.net") 
+  ;; you need make sure whether the "/jira" at the end is 
+  ;; necessary or not, see discussion at the end of this page
+
+  (require 'org-jira)
+  ;; install: org-jira, jira, xml-rpc
+#+END_SRC
+** projectile
+#+BEGIN_SRC emacs-lisp
+(projectile-global-mode)
+
+(setq projectile-switch-project-action 'projectile-dired)
+(define-key projectile-mode-map (kbd "C-c p a") 'my/grep-project)
+#+END_SRC
+** rspec-mode
+#+BEGIN_SRC emacs-lisp
+(require 'rvm)
+(setq rspec-use-rvm t)
+(setq rspec-use-rake-when-possible nil)
+(defadvice rspec-compile (around rspec-compile-around)
+  "Use BASH shell for running the specs because of ZSH issues."
+  (let ((shell-file-name "/bin/bash"))
+    ad-do-it))
+(ad-activate 'rspec-compile)
+#+END_SRC
+** ruby-mode
+#+BEGIN_SRC emacs-lisp
+  (defun my/ruby-mode-hooks ()
+    (subword-mode +1))
+
+  (add-hook 'ruby-mode-hook
+            'my/ruby-mode-hooks)
+#+END_SRC
+** rvm
+#+BEGIN_SRC emacs-lisp
+  (require 'rvm)
+  (rvm-use-default)
+#+END_SRC
+** smart-mode-line
+#+BEGIN_SRC emacs-lisp
+  (setq sml/theme 'light)
+  (sml/setup)
+#+END_SRC
+** smartparens
+#+BEGIN_SRC emacs-lisp
+  ;; про cmd-ctrl-d читать тут http://superuser.com/questions/326223/how-do-i-disable-the-command-control-d-word-definition-keyboard-shortcut-in-os-x
+
+  (require 'smartparens-config)
+  (smartparens-global-mode t)
+  (sp-use-smartparens-bindings)
+
+  (show-smartparens-global-mode t)
+
+  (sp-pair "(" ")" :wrap "C-(")
+#+END_SRC
+** smex
+#+BEGIN_SRC emacs-lisp
+  (global-set-key (kbd "M-x") 'smex)
+  (global-set-key (kbd "M-X") 'smex-major-mode-commands)
+  ;; This is your old M-x.
+  (global-set-key (kbd "C-c C-c M-x") 'execute-extended-command)
+#+END_SRC
+** undo-tree
+#+BEGIN_SRC emacs-lisp
+  (global-undo-tree-mode)
+#+END_SRC
+** yasnippet
+#+BEGIN_SRC emacs-lisp
+  (setq yas-snippet-dirs
+        '("~/.emacs.d/snippets"))
+
+  (yas-global-mode 1)
+#+END_SRC
+** key-chord
+#+BEGIN_SRC emacs-lisp
+  (eval-after-load "ace-jump-mode"
+    '(progn
+       (key-chord-define-global "jj" 'ace-jump-word-mode)
+       (key-chord-define-global "jl" 'ace-jump-line-mode)
+       (key-chord-define-global "jk" 'ace-jump-char-mode)))
+  (eval-after-load "undo-tree"
+    '(key-chord-define-global "uu" 'undo-tree-visualize))
+
+  (key-chord-mode +1)
+#+END_SRC
+
+* Shortcuts
+** Библиотека
+*** Листинг орг-файлов
+#+BEGIN_SRC emacs-lisp
+(defun my/org-listing ()
+  (interactive)
+  (require 'helm-files)
+  (helm-find-files-1 "/Users/prepor/Dropbox/notes/ org "))
+#+END_SRC
+*** Менять местами окошечки
+#+BEGIN_SRC emacs-lisp
+(defun my/swap-windows ()
+  "If you have 2 windows, it swaps them."
+  (interactive)
+  (if (/= (count-windows) 2)
+      (message "You need exactly 2 windows to do this.")
+    (let* ((w1 (car (window-list)))
+           (w2 (cadr (window-list)))
+           (b1 (window-buffer w1))
+           (b2 (window-buffer w2))
+           (s1 (window-start w1))
+           (s2 (window-start w2)))
+      (set-window-buffer w1 b2)
+      (set-window-buffer w2 b1)
+      (set-window-start w1 s2)
+      (set-window-start w2 s1)))
+  (other-window 1))
+#+END_SRC
+*** Рекурсивный хелм-греп в текущем проекте или директории
+#+BEGIN_SRC emacs-lisp
+(defun my/grep-project ()
+  "Open helm grep for current projectile project and current file's extenstion"
+  (interactive)
+  (require 'helm-mode)
+  (require 'helm-grep)
+  (let* ((project-root (condition-case nil
+                           (projectile-project-root)
+                         (error default-directoray)))
+         (ext (if (buffer-file-name (current-buffer))
+                  (format "*%s" (file-name-extension
+                                 (buffer-file-name (current-buffer)) 'dot))
+                "*")))
+    (helm-do-grep-1 (list project-root) t nil (list ext))))
+#+END_SRC
+*** Драг энд дроп файлов
+#+BEGIN_SRC emacs-lisp
+  (defun my/attach (file)
+    (require 'org-attach)
+    (org-attach-attach file nil 'cp)
+    (let* ((basename (file-name-nondirectory file))
+           (attach-dir (org-attach-dir t))
+           (fname (expand-file-name basename attach-dir)))
+      (insert (format "[[%s]]" fname))
+      (when (image-type-from-file-name file)
+        (org-display-inline-images))))
+
+  (defun my/dnd-proxy (f)
+    (if (eq major-mode 'org-mode)
+        (my/attach (expand-file-name (pop ns-input-file)
+                                     command-line-default-directory))
+      (funcall f)))
+
+  (defun my/dnd-image-find ()
+    (interactive)
+    (my/dnd-proxy 'ns-open-file-select-line))
+
+  (defun my/dnd-image-drag ()
+    (interactive)
+    (my/dnd-proxy 'ns-find-file))
+#+END_SRC
+*** Автоиндент всего буфера + удаление висящих пробелов
+#+BEGIN_SRC emacs-lisp
+  (defun my/clean-buffer-formatting ()
+    "Indent and clean up the buffer"
+    (interactive)
+    (indent-region (point-min) (point-max))
+    (whitespace-cleanup))
+    #+END_SRC
+** Макокнопочки
+#+BEGIN_SRC emacs-lisp
+  (setq mac-command-modifier 'meta)
+  (setq mac-option-modifier 'hyper)
+  (setq mac-right-option-modifier 'alt)
+#+END_SRC
+** Маппинги
+#+BEGIN_SRC emacs-lisp
+  (define-key global-map [ns-open-file-line] 'my/dnd-image-find)
+  (define-key global-map [ns-drag-file] 'my/dnd-image-drag)
+
+  (define-key global-map (kbd "RET") 'newline-and-indent)
+
+  (global-set-key (kbd "C-c <SPC>") 'helm-all-mark-rings)
+  (global-set-key (kbd "C-x r b") 'helm-filtered-bookmarks)
+  (global-set-key (kbd "M-i") 'helm-imenu)
+
+
+  (global-set-key (kbd "C-c n") 'my/clean-buffer-formatting)
+
+  (global-set-key (kbd "C-x C-b") 'ibuffer)
+
+  (global-set-key (kbd "C-c SPC") 'ace-jump-mode)
+  (global-set-key (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
+
+  (global-set-key (kbd "C-c a l") 'org-store-link)
+  (global-set-key (kbd "C-c a a") 'org-agenda)
+  (global-set-key (kbd "C-c a b") 'org-iswitchb)
+  (global-set-key (kbd "C-c a c") 'org-capture)
+  (global-set-key (kbd "C-c a h") 'my/org-listing)
+
+  (global-set-key (kbd "C-x g") 'magit-status)
+
+  (global-set-key (kbd "<up>")     'windmove-up)
+  (global-set-key (kbd "<down>")   'windmove-down)
+  (global-set-key (kbd "<left>")   'windmove-left)
+  (global-set-key (kbd "<right>")  'windmove-right)
+  (global-set-key (kbd "C-c s")    'my/swap-windows)
+
+  (define-key global-map (kbd "s-c") 'clipboard-kill-ring-save)
+
+  ;; alt + tab вместо cmd + tab
+  (define-key global-map (kbd "H-<tab>") 'pcomplete)
+  (define-key key-translation-map (kbd "H-<tab>") (kbd "C-M-i"))
+#+END_SRC
+* Мод-хуки
+** Программирование
+Автовыравниваем только комментарии, подсвечиваем красненьким висящие пробелы, переносим строки.
+#+BEGIN_SRC emacs-lisp
+  (defun my/general-formatting-hooks ()
+    (setq word-wrap t)
+    ;; (my/turn-on 'auto-fill)
+    (setq comment-auto-fill-only-comments t)
+    (setq show-trailing-whitespace 't))
+  (add-hook 'text-mode-hook 'my/general-formatting-hooks)
+  (add-hook 'prog-mode-hook 'my/general-formatting-hooks)
+#+END_SRC
+** Текст
+Мягко переносим строки, вез всяких левых стрелочек
+#+BEGIN_SRC emacs-lisp
+  (defun my/text-formatting-hooks ()
+    (visual-line-mode))
+  (add-hook 'text-mode-hook 'my/text-formatting-hooks)
+#+END_SRC
+** Lisp
+#+BEGIN_SRC emacs-lisp
+  (defun my/general-lisp-hooks ()
+    (rainbow-delimiters-mode +1)
+    ;; 'highlight-parentheses
+      (smartparens-strict-mode +1))
+  (add-hook 'lisp-mode-hook 'my/general-lisp-hooks)
+  (add-hook 'emacs-lisp-mode-hook 'my/general-lisp-hooks)
+  (add-hook 'clojure-mode-hook 'my/general-lisp-hooks)
+#+END_SRC
+
+#+BEGIN_SRC emacs-lisp
+(key-chord-mode +1)
+#+END_SRC
