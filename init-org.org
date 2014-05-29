@@ -485,9 +485,7 @@ inputenc и fontenc убираем из дефолтных пакетов
                         (cider-repl-handler (cider-current-repl-buffer))))
 
   (defun my/cider-repl-mode-hooks ()
-    (my/turn-on 'rainbow-delimiters
-                ;; 'highlight-parentheses
-                )
+    (rainbow-delimiters-mode +1)
     (setq cider-repl-popup-stacktraces t)
     (define-key cider-mode-map (kbd "C-c C-n") 'my/nrepl-reset))
 
