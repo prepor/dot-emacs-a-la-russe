@@ -337,27 +337,35 @@ inputenc и fontenc убираем из дефолтных пакетов
 ** SQL
 Быстрое подключения к любимым эскуэлям
 *** Список коннектов
-#+BEGIN_SRC emacs-lisp
-  (setq sql-connection-alist
-        '((production
-           (sql-name "production")
-           (sql-product 'postgres)
-           (sql-server "10.19.0.90")
-           (sql-user "flocktory")
-           (sql-password "flocktory")
-           (sql-database "flocktory_production")
-           (sql-port 5432))
-          (development
-           (sql-name "development")
-           (sql-product 'postgres)
-           (sql-server "localhost")
-           (sql-user "flocktory")
-           (sql-password "flocktory")
-           (sql-database "flocktory")
-           (sql-port 5432))))
+#+BEGIN_SRC emacs-lisp :results silent
+    (setq sql-connection-alist
+          '((production
+             (sql-name "production")
+             (sql-product 'postgres)
+             (sql-server "10.19.0.90")
+             (sql-user "flocktory")
+             (sql-password "flocktory")
+             (sql-database "flocktory_production")
+             (sql-port 5432))
+            (events
+             (sql-name "events")
+             (sql-product 'postgres)
+             (sql-server "10.19.0.215")
+             (sql-user "flocktory")
+             (sql-password "gmPtsp94ahxmUb")
+             (sql-database "flocktory_normalized")
+             (sql-port 5432))
+            (development
+             (sql-name "development")
+             (sql-product 'postgres)
+             (sql-server "localhost")
+             (sql-user "flocktory")
+             (sql-password "flocktory")
+             (sql-database "flocktory")
+             (sql-port 5432))))
 #+END_SRC
 *** Пресеты
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :results silent
   (defun sql-pool-production ()
     (interactive)
     (sql-connect-preset 'production))
@@ -365,7 +373,11 @@ inputenc и fontenc убираем из дефолтных пакетов
   (defun sql-pool-development ()
     (interactive)
     (sql-connect-preset 'development))
-#+END_SRC
+
+  (defun sql-pool-events ()
+    (interactive)
+    (sql-connect-preset 'events))
+    #+END_SRC
 *** Библиотека
 #+BEGIN_SRC emacs-lisp
   ;; this makes all it all happen via M-x sql-pool-host1_db1, etc.
