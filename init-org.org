@@ -679,19 +679,19 @@ helm-compile-source--helm-headline, которую использует напр
 #+END_SRC
 *** Рекурсивный хелм-греп в текущем проекте или директории
 #+BEGIN_SRC emacs-lisp
-(defun my/grep-project ()
-  "Open helm grep for current projectile project and current file's extenstion"
-  (interactive)
-  (require 'helm-mode)
-  (require 'helm-grep)
-  (let* ((project-root (condition-case nil
-                           (projectile-project-root)
-                         (error default-directoray)))
-         (ext (if (buffer-file-name (current-buffer))
-                  (format "*%s" (file-name-extension
-                                 (buffer-file-name (current-buffer)) 'dot))
-                "*")))
-    (helm-do-grep-1 (list project-root) t nil (list ext))))
+  (defun my/grep-project ()
+    "Open helm grep for current projectile project and current file's extenstion"
+    (interactive)
+    (require 'helm-mode)
+    (require 'helm-grep)
+    (let* ((project-root (condition-case nil
+                             (projectile-project-root)
+                           (error default-directory)))
+           (ext (if (buffer-file-name (current-buffer))
+                    (format "*%s" (file-name-extension
+                                   (buffer-file-name (current-buffer)) 'dot))
+                  "*")))
+      (helm-do-grep-1 (list project-root) t nil (list ext))))
 #+END_SRC
 *** Драг энд дроп файлов
 #+BEGIN_SRC emacs-lisp
