@@ -125,7 +125,7 @@
                           (add-hook 'emacs-lisp-mode-hook
                                     (lambda () (elisp-slime-nav-mode t)))))
           (:name cider
-                 :checkout "ff0a4dd22b6cdb2b2e80bd6d86bae37f39551e32")
+                 :checkout "5c91a6f0560174015ebd2ba1e2a8c53964fbf9cf")
           (:name clojure-mode
                  :checkout "master")
           (:name smart-mode-line
