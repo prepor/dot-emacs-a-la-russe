@@ -57,6 +57,10 @@
 #+BEGIN_SRC emacs-lisp
 (set-input-method "russian-computer")
 #+END_SRC
+- Магический индент
+#+BEGIN_SRC emacs-lisp
+  (electric-indent-mode +1)
+#+END_SRC
 ** Шрифты
 #+BEGIN_SRC emacs-lisp
 (set-face-attribute 'default nil
@@ -737,8 +741,6 @@ helm-compile-source--helm-headline, которую использует напр
 #+BEGIN_SRC emacs-lisp
   (define-key global-map [ns-open-file-line] 'my/dnd-image-find)
   (define-key global-map [ns-drag-file] 'my/dnd-image-drag)
-
-  (define-key global-map (kbd "RET") 'newline-and-indent)
 
   (global-set-key (kbd "C-c <SPC>") 'helm-all-mark-rings)
   (global-set-key (kbd "C-x r b") 'helm-filtered-bookmarks)
