@@ -143,6 +143,10 @@
           (:name less-css-mode
                  :type github
                  :pkgname "purcell/less-css-mode")
+          (:name helm-clojure
+                 :type github
+                 :pkgname "prepor/helm-clojure"
+                 :depends (s dash cider helm yasnippet))
           ;; с официальным не совместим clj-refactor.el там куда то делся paredit-move-forward
           (:name paredit
                  :type github
