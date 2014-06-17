@@ -16,7 +16,7 @@
         (eval-print-last-sexp))))
   (add-to-list 'el-get-recipe-path "~/.emacs.d/el-get-user/recipes")
   ;; (setq el-get-user-package-directory "~/.emacs.d/packages/")
-  #+END_SRC
+#+END_SRC
 ** custom.el
 Должен быть только один и держим его отдельно
 #+BEGIN_SRC emacs-lisp
@@ -153,21 +153,26 @@
                  :pkgname "emacsmirror/paredit")
           (:name org-jira
                  :type github
-                 :pkgname "baohaojun/org-jira")))
+                 :pkgname "baohaojun/org-jira")
+          (:name ac-cider-compliment
+                 :type github
+                 :pkgname "alexander-yakushev/ac-cider-compliment")))
 #+END_SRC
 ** Полный список рецептов
 #+BEGIN_SRC emacs-lisp :results silent
   (setq dim-packages
         (append
          '(yasnippet smex exec-path-from-shell auto-complete pkg-info projectile ack-and-a-half
-                     org-mode
+                     org-mode magit
                      idomenu undo-tree key-chord ace-jump-mode
                      auto-complete rainbow-delimiters smartparens
-                     ac-nrepl htmlize
-                     cl-lib magit
+                     htmlize
+                     cl-lib
                      rvm inf-ruby rspec-mode
                      multiple-cursors clj-refactor
-                     yaml-mode flycheck helm emmet-mode mmm-mode auctex)
+                     yaml-mode flycheck helm emmet-mode mmm-mode auctex
+                     ;; может использоваться в "библиотеках"
+                     dash s)
          (mapcar 'el-get-as-symbol (mapcar 'el-get-source-name el-get-sources))))
 #+END_SRC
 
@@ -254,7 +259,7 @@
 *** Напоминалки
 Если тудушка зашедулено на определенное время выводить напоминалки через системный Notification Center
 - формируем напоминалки из файлов в agenda
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :results silent
 (defun my/org-agenda-to-appt ()
   (interactive)
   (setq appt-time-msg-list nil)
@@ -350,52 +355,61 @@ inputenc и fontenc убираем из дефолтных пакетов
 Быстрое подключения к любимым эскуэлям
 *** Список коннектов
 #+BEGIN_SRC emacs-lisp :results silent
-    (setq sql-connection-alist
-          '((production
-             (sql-name "production")
-             (sql-product 'postgres)
-             (sql-server "10.19.0.90")
-             (sql-user "flocktory")
-             (sql-password "flocktory")
-             (sql-database "flocktory_production")
-             (sql-port 5432))
-            (events
-             (sql-name "events")
-             (sql-product 'postgres)
-             (sql-server "10.19.0.215")
-             (sql-user "flocktory")
-             (sql-password "gmPtsp94ahxmUb")
-             (sql-database "flocktory_normalized")
-             (sql-port 5432))
-            (development
-             (sql-name "development")
-             (sql-product 'postgres)
-             (sql-server "localhost")
-             (sql-user "flocktory")
-             (sql-password "flocktory")
-             (sql-database "flocktory")
-             (sql-port 5432))))
+  (setq sql-connection-alist
+        '((production
+           (sql-name "production")
+           (sql-product 'postgres)
+           (sql-server "10.19.0.90")
+           (sql-user "flocktory")
+           (sql-password "flocktory")
+           (sql-database "flocktory_production")
+           (sql-port 5432))
+          (events
+           (sql-name "events")
+           (sql-product 'postgres)
+           (sql-server "10.19.0.215")
+           (sql-user "flocktory")
+           (sql-password "gmPtsp94ahxmUb")
+           (sql-database "flocktory_normalized")
+           (sql-port 5432))
+          (development
+           (sql-name "development")
+           (sql-product 'postgres)
+           (sql-server "localhost")
+           (sql-user "flocktory")
+           (sql-password "flocktory")
+           (sql-database "flocktory")
+           (sql-port 5432))
+          (test
+           (sql-name "test")
+           (sql-product 'postgres)
+           (sql-server "localhost")
+           (sql-user "flocktory")
+           (sql-password "flocktory")
+           (sql-database "flocktory_test")
+           (sql-port 5432))))
 #+END_SRC
 *** Пресеты
 #+BEGIN_SRC emacs-lisp :results silent
   (defun sql-pool-production ()
     (interactive)
-    (sql-connect-preset 'production))
+    (sql-connect-preset "production"))
 
   (defun sql-pool-development ()
     (interactive)
-    (sql-connect-preset 'development))
+    (sql-connect-preset "development"))
 
   (defun sql-pool-events ()
     (interactive)
-    (sql-connect-preset 'events))
-    #+END_SRC
+    (sql-connect-preset "events"))
+#+END_SRC
 *** Библиотека
 #+BEGIN_SRC emacs-lisp
   ;; this makes all it all happen via M-x sql-pool-host1_db1, etc.
   (defun sql-connect-preset (name)
     "Connect to a predefined SQL connection listed in `sql-connection-alist'"
-    (eval `(let ,(cdr (assoc name sql-connection-alist))
+    (interactive (list (completing-read "Preset:" (-map 'car sql-connection-alist))))
+    (eval `(let ,(cdr (assoc (intern name) sql-connection-alist))
              (flet ((sql-get-login (&rest what)))
                (sql-product-interactive sql-product name)))))
 
@@ -421,16 +435,13 @@ inputenc и fontenc убираем из дефолтных пакетов
               (setq sql-alternate-buffer-name (sql-make-smart-buffer-name))
               (sql-rename-buffer)))
 #+END_SRC
-** ac-nrepl
+** ac-cide-compliment
 #+BEGIN_SRC emacs-lisp
-  (add-hook 'cider-repl-mode-hook 'ac-nrepl-setup)
-  (add-hook 'cider-mode-hook 'ac-nrepl-setup)
+  (add-hook 'cider-mode-hook 'ac-cider-compliment-setup)
+  (add-hook 'cider-repl-mode-hook 'ac-cider-compliment-repl-setup)
   (eval-after-load "auto-complete"
-    '(add-to-list 'ac-modes 'cider-repl-mode))
-  (eval-after-load "cider"
-    '(progn
-       (define-key cider-repl-mode-map (kbd "C-c C-d") 'ac-nrepl-popup-doc)
-       (define-key cider-mode-map (kbd "C-c C-d") 'ac-nrepl-popup-doc)))
+    '(add-to-list 'ac-modes 'cider-mode 'cider-repl-mode))
+
 #+END_SRC
 ** auctex
 #+BEGIN_SRC emacs-lisp
@@ -503,16 +514,24 @@ inputenc и fontenc убираем из дефолтных пакетов
 
   (defun my/cider-mode-hooks ()
     "Clojure specific setup code that should only be run when we
-    have a CIDER REPL connection"
+      have a CIDER REPL connection"
     (cider-turn-on-eldoc-mode)
     (define-key cider-repl-mode-map (kbd "C-c C-n") 'my/nrepl-reset)
     (define-key cider-repl-mode-map (kbd "C-c C-r") 'my/nrepl-refresh)
-    (define-key cider-mode-map (kbd "C-c C-r") 'my/nrepl-refresh))
+    (define-key cider-mode-map (kbd "C-c C-r") 'my/nrepl-refresh)
+    (define-key cider-mode-map (kbd "C-c C-c") 'helm-clojure))
+
+  (defun my/cider-doc-mode-hooks ()
+    (setq truncate-lines nil)
+    (force-mode-line-update))
 #+END_SRC
 *** Хуки
 #+BEGIN_SRC emacs-lisp
   (add-hook 'cider-mode-hook
             'my/cider-mode-hooks)
+
+  (add-hook 'cider-doc-mode-hook
+            'my/cider-doc-mode-hooks)
 
   (add-hook 'cider-repl-mode-hook
             'my/cider-repl-mode-hooks)
@@ -575,8 +594,8 @@ helm-compile-source--helm-headline, которую использует напр
 ** org-jira
 пока не работает :(
 #+BEGIN_SRC emacs-lisp
-  (setq jiralib-url "http://flocktory.atlassian.net") 
-  ;; you need make sure whether the "/jira" at the end is 
+  (setq jiralib-url "http://flocktory.atlassian.net")
+  ;; you need make sure whether the "/jira" at the end is
   ;; necessary or not, see discussion at the end of this page
 
   (require 'org-jira)
@@ -658,7 +677,7 @@ helm-compile-source--helm-headline, которую использует напр
   (eval-after-load "undo-tree"
     '(key-chord-define-global "uu" 'undo-tree-visualize))
 
-  (key-chord-mode +1)
+  (key-chord-mode t)
 #+END_SRC
 
 * Shortcuts
@@ -738,7 +757,7 @@ helm-compile-source--helm-headline, которую использует напр
     (interactive)
     (indent-region (point-min) (point-max))
     (whitespace-cleanup))
-    #+END_SRC
+#+END_SRC
 ** Макокнопочки
 #+BEGIN_SRC emacs-lisp
   (setq mac-command-modifier 'meta)
@@ -757,10 +776,11 @@ helm-compile-source--helm-headline, которую использует напр
 
   (global-set-key (kbd "C-c n") 'my/clean-buffer-formatting)
 
-  (global-set-key (kbd "C-x C-b") 'ibuffer)
+  ;; (global-set-key (kbd "C-x C-b") 'ibuffer)
+  (global-set-key (kbd "C-x b") 'helm-buffers-list)
 
-  (global-set-key (kbd "C-c SPC") 'ace-jump-mode)
-  (global-set-key (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
+  ;; (global-set-key (kbd "C-c SPC") 'ace-jump-mode)
+  ;; (global-set-key (kbd "C-x SPC") 'ace-jump-mode-pop-mark)
 
   (global-set-key (kbd "C-c a l") 'org-store-link)
   (global-set-key (kbd "C-c a a") 'org-agenda)
