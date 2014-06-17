@@ -7,10 +7,9 @@
  '(ns-alternate-modifier (quote hyper))
  '(ns-tool-bar-display-mode (quote both) t)
  '(ns-tool-bar-size-mode (quote regular) t)
- '(sml/mule-info nil)
  '(org-agenda-files
    (quote
-    ("~/Dropbox/notes/flocktory.org" "~/Dropbox/notes/notes.org" "~/Dropbox/notes/captures.org" "~/Dropbox/notes/tasks.org")))
+    ("~/Dropbox/notes/emacs.org" "~/Dropbox/notes/flocktory.org" "~/Dropbox/notes/notes.org" "~/Dropbox/notes/captures.org" "~/Dropbox/notes/tasks.org")))
  '(safe-local-variable-values
    (quote
     ((encoding . utf-8)
