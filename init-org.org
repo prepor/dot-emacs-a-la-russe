@@ -61,6 +61,10 @@
 #+BEGIN_SRC emacs-lisp
   (electric-indent-mode +1)
 #+END_SRC
+- Автоматически вставлять шаблоны новых файлов
+#+BEGIN_SRC emacs-lisp
+  (auto-insert-mode t)
+#+END_SRC
 ** Шрифты
 #+BEGIN_SRC emacs-lisp
 (set-face-attribute 'default nil
