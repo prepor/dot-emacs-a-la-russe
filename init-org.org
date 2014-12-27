@@ -20,8 +20,11 @@
 ** custom.el
 Должен быть только один и держим его отдельно
 #+BEGIN_SRC emacs-lisp
+  (setq my/mode-line-format mode-line-format)
   (setq custom-file "~/.emacs.d/custom.el")
   (load custom-file)
+
+  (load "~/.emacs.d/private.el")
 #+END_SRC
 * Обшие настройки
 - Всегда обновлять буферы с диска
@@ -67,19 +70,22 @@
 #+END_SRC
 ** Шрифты
 #+BEGIN_SRC emacs-lisp
-(set-face-attribute 'default nil
-                    :family "Inconsolata"
-                    :height 140
-                    :weight 'normal
-                    :width 'normal)
-(when (functionp 'set-fontset-font)
-  (set-fontset-font "fontset-default"
-                    'unicode
-                    (font-spec :family "DejaVu Sans Mono"
-                               :width 'normal
-                               :size 12.4
-                               :weight 'normal)))
+  (set-face-attribute 'default nil
+                      :family "Inconsolata"
+                      :height 140
+                      :weight 'normal
+                      :width 'normal)
+  (when (functionp 'set-fontset-font)
+    (set-fontset-font "fontset-default"
+                      'unicode
+                      (font-spec :family "DejaVu Sans Mono"
+                                 :width 'normal
+                                 :size 12.4
+                                 :weight 'normal)))
 #+END_SRC
+
+#+RESULTS:
+
 ** ido везде
 #+BEGIN_SRC emacs-lisp
 (ido-mode t)
@@ -99,6 +105,20 @@
   (put 'narrow-to-region 'disabled nil)
   (put 'upcase-region 'disabled nil)
   (put 'LaTeX-narrow-to-environment 'disabled nil)
+#+END_SRC
+** Пустой экран
+#+BEGIN_SRC emacs-lisp
+  (defun my/toggle-mode-line () "toggles the modeline on and off"
+         (interactive)
+         (setq mode-line-format
+               (if (equal mode-line-format nil)
+                   my/mode-line-format))
+         (redraw-display))
+#+END_SRC
+** shell
+#+BEGIN_SRC emacs-lisp
+  (setq explicit-shell-file-name "/usr/local/bin/zsh")
+  (setq shell-file-name "/usr/local/bin/zsh")
 #+END_SRC
 * Библиотека
 ** os x нотификации
@@ -121,6 +141,15 @@
         (kill-new filename)
         (message "Copied buffer file name '%s' to the clipboard." filename))))
 #+END_SRC
+** Предыдущий буфер
+#+BEGIN_SRC emacs-lisp
+  (defun my/switch-to-previous-buffer ()
+    "Switch to previously open buffer.
+  Repeated invocations toggle between the two most recently open buffers."
+    (interactive)
+    (switch-to-buffer (other-buffer (current-buffer) 1)))
+
+#+END_SRC
 * Пакеты
 ** Кастомные рецепты
 #+BEGIN_SRC emacs-lisp :results silent
@@ -132,10 +161,11 @@
                  :after (progn
                           (add-hook 'emacs-lisp-mode-hook
                                     (lambda () (elisp-slime-nav-mode t)))))
-          (:name cider
-                 :checkout "00312396cd0b57afc32da13b9ca1700a17f55aab")
           (:name clojure-mode
-                 :checkout "master")
+                 :checkout "ca080b90340f13797db428a1da05bc8792040c25")
+          (:name ac-cider)
+          (:name cider
+                 :checkout "v0.8.1")
           (:name smart-mode-line
                  :type github
                  :pkgname "Bruce-Connor/smart-mode-line"
@@ -154,25 +184,28 @@
           (:name org-jira
                  :type github
                  :pkgname "baohaojun/org-jira")
-          (:name ac-cider-compliment
+          (:name refheap
                  :type github
-                 :pkgname "alexander-yakushev/ac-cider-compliment")))
+                 :pkgname "Raynes/refheap.el")))
 #+END_SRC
 ** Полный список рецептов
 #+BEGIN_SRC emacs-lisp :results silent
   (setq dim-packages
         (append
          '(yasnippet smex exec-path-from-shell auto-complete pkg-info projectile ack-and-a-half
-                     org-mode magit
+                     org-mode magit git-timemachine
                      idomenu undo-tree key-chord ace-jump-mode
                      auto-complete rainbow-delimiters smartparens
                      htmlize
                      cl-lib
                      rvm inf-ruby rspec-mode
                      multiple-cursors clj-refactor
-                     yaml-mode flycheck helm emmet-mode mmm-mode auctex
+                     yaml-mode flycheck helm helm-swoop helm-dash project-explorer
+                     emmet-mode mmm-mode markdown-mode
+                     goto-last-change browse-kill-ring
                      ;; может использоваться в "библиотеках"
-                     dash s)
+                     dash s
+                     go-mode go-autocomplete go-flymake)
          (mapcar 'el-get-as-symbol (mapcar 'el-get-source-name el-get-sources))))
 #+END_SRC
 
@@ -255,7 +288,7 @@
 - Не спрашивать каждый раз при исполнении кода
 #+BEGIN_SRC emacs-lisp
   (setq org-confirm-babel-evaluate nil)
-  #+END_SRC
+#+END_SRC
 *** Напоминалки
 Если тудушка зашедулено на определенное время выводить напоминалки через системный Notification Center
 - формируем напоминалки из файлов в agenda
@@ -285,7 +318,6 @@
   (ad-activate 'appt-disp-window)
 #+END_SRC
 *** latex
--
 #+BEGIN_SRC emacs-lisp
 (require 'ox-latex)
 #+END_SRC
@@ -359,7 +391,7 @@ inputenc и fontenc убираем из дефолтных пакетов
         '((production
            (sql-name "production")
            (sql-product 'postgres)
-           (sql-server "10.19.0.90")
+           (sql-server "10.19.0.27")
            (sql-user "flocktory")
            (sql-password "flocktory")
            (sql-database "flocktory_production")
@@ -435,13 +467,21 @@ inputenc и fontenc убираем из дефолтных пакетов
               (setq sql-alternate-buffer-name (sql-make-smart-buffer-name))
               (sql-rename-buffer)))
 #+END_SRC
-** ac-cide-compliment
+** ac-cider
 #+BEGIN_SRC emacs-lisp
-  (add-hook 'cider-mode-hook 'ac-cider-compliment-setup)
-  (add-hook 'cider-repl-mode-hook 'ac-cider-compliment-repl-setup)
+  (require 'ac-cider)
+  (add-hook 'cider-mode-hook 'ac-flyspell-workaround)
+  (add-hook 'cider-mode-hook 'ac-cider-setup)
+  (add-hook 'cider-repl-mode-hook 'ac-cider-setup)
   (eval-after-load "auto-complete"
-    '(add-to-list 'ac-modes 'cider-mode 'cider-repl-mode))
+    '(progn (add-to-list 'ac-modes 'cider-mode)
+            (add-to-list 'ac-modes 'cider-repl-mode)))
 
+  (defun set-auto-complete-as-completion-at-point-function ()
+    (setq completion-at-point-functions '(auto-complete)))
+
+  (add-hook 'auto-complete-mode-hook 'set-auto-complete-as-completion-at-point-function)
+  (add-hook 'cider-mode-hook 'set-auto-complete-as-completion-at-point-function)
 #+END_SRC
 ** auctex
 #+BEGIN_SRC emacs-lisp
@@ -456,34 +496,41 @@ inputenc и fontenc убираем из дефолтных пакетов
   (setq TeX-parse-self t)
   (setq-default TeX-master nil)
   (add-hook 'LaTeX-mode-hook 'visual-line-mode)
-  (add-hook 'LaTeX-mode-hook 'flyspell-mode)
+  ;; (add-hook 'LaTeX-mode-hook 'flyspell-mode)
   (add-hook 'LaTeX-mode-hook 'LaTeX-math-mode)
   (setq TeX-PDF-mode t)
 #+END_SRC
+
+#+RESULTS:
+: t
+
 ** autocomplete
 #+BEGIN_SRC emacs-lisp
   (require 'auto-complete)
 
-  (ac-flyspell-workaround)
+  ;; (ac-flyspell-workaround)
 
-  (global-auto-complete-mode t)
-  (setq ac-auto-show-menu t)
-  (setq ac-dwim t)
-  (setq ac-use-menu-map t)
+  (setq ac-use-quick-help t)
   (setq ac-quick-help-delay 1)
-  (setq ac-quick-help-height 60)
-  (setq ac-disable-inline t)
-  (setq ac-show-menu-immediately-on-auto-complete t)
-  (setq ac-auto-start nil)
-  (setq ac-candidate-menu-min 0)
 
-  (ac-set-trigger-key "TAB")
+  ;; (global-auto-complete-mode t)
+  ;; (setq ac-auto-show-menu t)
+  ;; (setq ac-dwim t)
+  ;; (setq ac-use-menu-map t)
 
-  (dolist (mode '(magit-log-edit-mode log-edit-mode org-mode text-mode haml-mode
-                  sass-mode yaml-mode csv-mode espresso-mode haskell-mode
-                  nxml-mode sh-mode smarty-mode clojure-mode
-                  lisp-mode textile-mode markdown-mode tuareg-mode))
-    (add-to-list 'ac-modes mode))
+  ;; (setq ac-quick-help-height 60)
+  ;; (setq ac-disable-inline t)
+  ;; (setq ac-show-menu-immediately-on-auto-complete t)
+  ;; (setq ac-auto-start nil)
+  ;; (setq ac-candidate-menu-min 0)
+
+  ;; (ac-set-trigger-key "TAB")
+
+  ;; (dolist (mode '(magit-log-edit-mode log-edit-mode org-mode text-mode haml-mode
+  ;;                 sass-mode yaml-mode csv-mode espresso-mode haskell-mode
+  ;;                 nxml-mode sh-mode smarty-mode clojure-mode
+  ;;                 lisp-mode textile-mode markdown-mode tuareg-mode))
+  ;;   (add-to-list 'ac-modes mode))
 #+END_SRC
 ** cider
 *** Библиотека
@@ -512,14 +559,23 @@ inputenc и fontenc убираем из дефолтных пакетов
     (setq cider-repl-popup-stacktraces t)
     (define-key cider-mode-map (kbd "C-c C-n") 'my/nrepl-reset))
 
+  (defun my/cider-react-instant-save ()
+    (interactive)
+    (cider-eval-defun-at-point)
+    (cider-interactive-eval "(bif.core/renderer @bif.core/flap-state)"))
+
   (defun my/cider-mode-hooks ()
     "Clojure specific setup code that should only be run when we
-      have a CIDER REPL connection"
+        have a CIDER REPL connection"
     (cider-turn-on-eldoc-mode)
     (define-key cider-repl-mode-map (kbd "C-c C-n") 'my/nrepl-reset)
     (define-key cider-repl-mode-map (kbd "C-c C-r") 'my/nrepl-refresh)
     (define-key cider-mode-map (kbd "C-c C-r") 'my/nrepl-refresh)
-    (define-key cider-mode-map (kbd "C-c C-c") 'helm-clojure))
+    (define-key cider-mode-map (kbd "C-x M-i") 'my/cider-react-instant-save)
+    (define-key cider-mode-map (kbd "C-c C-c") 'helm-clojure)
+
+    ;; redefined in cider-mode to cider-test-show-report
+    (define-key cider-mode-map (kbd "C-c C-t") 'clojure-jump-between-tests-and-code))
 
   (defun my/cider-doc-mode-hooks ()
     (setq truncate-lines nil)
@@ -571,8 +627,14 @@ inputenc и fontenc убираем из дефолтных пакетов
 #+END_SRC
 ** flycheck
 #+BEGIN_SRC emacs-lisp
-  (setq flycheck-checkers '(ruby bash))
+  ;; (setq flycheck-checkers '(ruby bash go-goflymake))
   (global-flycheck-mode +1)
+
+  (defun my/flycheck-display-error-messages (errors)
+    (when errors
+      (flycheck-list-errors)))
+
+  (setq flycheck-display-errors-function #'my/flycheck-display-error-messages)
 #+END_SRC
 ** helm
 #+BEGIN_SRC emacs-lisp
@@ -603,10 +665,16 @@ helm-compile-source--helm-headline, которую использует напр
 #+END_SRC
 ** projectile
 #+BEGIN_SRC emacs-lisp
-(projectile-global-mode)
+  (projectile-global-mode)
+  (require 'helm-projectile)
+  (setq projectile-switch-project-action 'projectile-dired)
+  (define-key projectile-mode-map (kbd "C-c p a") 'my/grep-project)
 
-(setq projectile-switch-project-action 'projectile-dired)
-(define-key projectile-mode-map (kbd "C-c p a") 'my/grep-project)
+  (setq helm-projectile-sources-list
+    '(helm-source-projectile-buffers-list
+      helm-source-projectile-recentf-list
+      helm-source-projectile-files-list
+      helm-source-projectile-directories-list))
 #+END_SRC
 ** rspec-mode
 #+BEGIN_SRC emacs-lisp
@@ -642,6 +710,8 @@ helm-compile-source--helm-headline, которую использует напр
   ;; про cmd-ctrl-d читать тут http://superuser.com/questions/326223/how-do-i-disable-the-command-control-d-word-definition-keyboard-shortcut-in-os-x
 
   (require 'smartparens-config)
+  (require 'smartparens-ruby)
+
   (smartparens-global-mode t)
   (sp-use-smartparens-bindings)
 
@@ -667,17 +737,69 @@ helm-compile-source--helm-headline, которую использует напр
 
   (yas-global-mode 1)
 #+END_SRC
+** prodigy
+#+BEGIN_SRC emacs-lisp
+  (prodigy-define-service
+    :name "flocktory-app"
+    :command "rails"
+    :args '("s")
+    :path '("/Users/ios/work/flocktory-app/bin")
+    :cwd "/Users/ios/work/flocktory-app"
+    :tags '(work ruby))
+
+  (prodigy-define-service
+    :name "redis"
+    :command "redis-server"
+    :args '("/usr/local/etc/redis.conf")
+    :tags '(work db))
+
+  (prodigy-define-service
+    :name "mongod"
+    :command "mongod"
+    :args '("--config" "/usr/local/etc/mongod.conf")
+    :tags '(work db))
+
+  (prodigy-define-service
+    :name "postgres"
+    :command "postgres"
+    :args '("-D" "/usr/local/var/postgres")
+    :path '("/usr/local/Cellar/postgresql/9.3.4/bin/")
+    :tags '(work db))
+
+#+END_SRC
+** magit
+#+BEGIN_SRC emacs-lisp
+  (eval-after-load "git-commit-mode"
+    '(remove-hook 'git-commit-setup-hook 'git-commit-turn-on-flyspell))
+#+END_SRC
+** js
+#+BEGIN_SRC emacs-lisp
+(setq js-indent-level 2)
+#+END_SRC
+** go
+#+BEGIN_SRC emacs-lisp
+  (setq el-get-go "/usr/local/bin/go")
+
+  (defun my/go-mode-hook ()
+    (require 'go-flycheck)
+    (add-hook 'before-save-hook 'gofmt-before-save))
+
+  (add-hook 'go-mode-hook 'my/go-mode-hook)
+  (add-hook 'go-mode-hook (lambda ()
+                            (local-set-key (kbd "M-.") #'godef-jump)))
+  (add-hook 'go-mode-hook 'go-eldoc-setup)
+#+END_SRC
 ** key-chord
 #+BEGIN_SRC emacs-lisp
-  (eval-after-load "ace-jump-mode"
-    '(progn
-       (key-chord-define-global "jj" 'ace-jump-word-mode)
-       (key-chord-define-global "jl" 'ace-jump-line-mode)
-       (key-chord-define-global "jk" 'ace-jump-char-mode)))
-  (eval-after-load "undo-tree"
-    '(key-chord-define-global "uu" 'undo-tree-visualize))
+  (key-chord-mode +1)
+  (key-chord-define-global "jj" 'ace-jump-word-mode)
+  (key-chord-define-global "jl" 'ace-jump-line-mode)
+  (key-chord-define-global "jk" 'ace-jump-char-mode)
+  (key-chord-define-global "uu" 'undo-tree-visualize)
 
-  (key-chord-mode t)
+  (key-chord-define-global "yy" 'browse-kill-ring)
+
+  (key-chord-define-global "JJ" 'my/switch-to-previous-buffer)
 #+END_SRC
 
 * Shortcuts
@@ -758,6 +880,12 @@ helm-compile-source--helm-headline, которую использует напр
     (indent-region (point-min) (point-max))
     (whitespace-cleanup))
 #+END_SRC
+*** Вставка в refheap
+#+BEGIN_SRC emacs-lisp
+  (defun my/refheap-paste ()
+    (interactive)
+    (refheap-paste-region-or-buffer +1))
+#+END_SRC
 ** Макокнопочки
 #+BEGIN_SRC emacs-lisp
   (setq mac-command-modifier 'meta)
@@ -796,17 +924,34 @@ helm-compile-source--helm-headline, которую использует напр
   (global-set-key (kbd "<right>")  'windmove-right)
   (global-set-key (kbd "C-c s")    'my/swap-windows)
 
+  (global-set-key (kbd "C-x C-\\") 'goto-last-change)
+
   (define-key global-map (kbd "s-c") 'clipboard-kill-ring-save)
 
   ;; alt + tab вместо cmd + tab
   (define-key global-map (kbd "H-<tab>") 'pcomplete)
   (define-key key-translation-map (kbd "H-<tab>") (kbd "C-M-i"))
+
+  (global-set-key [f1] 'my/toggle-mode-line)
+
+  (global-unset-key (kbd "C-x m"))
+  (global-set-key (kbd "C-x m p") 'my/refheap-paste)
+
+  (defun my/ruby-hash-syntax-refactor ()
+    (interactive)
+    (let* ((sexp (sp-get-enclosing-sexp))
+           (beg (sp-get sexp :beg))
+           (end (sp-get sexp :end)))
+      (replace-regexp ":\\([[:alpha:]_][[:alnum:]_]*\\)\\ ?=>\\ ?" "\\1: " nil beg end)))
+
+  (global-set-key (kbd "C-x m r h") 'my/ruby-hash-syntax-refactor)
 #+END_SRC
 * Мод-хуки
 ** Программирование
 Автовыравниваем только комментарии, подсвечиваем красненьким висящие пробелы, переносим строки.
 #+BEGIN_SRC emacs-lisp
   (defun my/general-formatting-hooks ()
+    (key-chord-mode +1)
     (setq word-wrap t)
     ;; (my/turn-on 'auto-fill)
     (setq comment-auto-fill-only-comments t)
@@ -830,8 +975,4 @@ helm-compile-source--helm-headline, которую использует напр
   (add-hook 'lisp-mode-hook 'my/general-lisp-hooks)
   (add-hook 'emacs-lisp-mode-hook 'my/general-lisp-hooks)
   (add-hook 'clojure-mode-hook 'my/general-lisp-hooks)
-#+END_SRC
-
-#+BEGIN_SRC emacs-lisp
-(key-chord-mode +1)
 #+END_SRC

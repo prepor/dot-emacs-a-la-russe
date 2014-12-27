@@ -4,15 +4,18 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-enabled-themes (quote (tango)))
+ '(fringe-mode 0 nil (fringe))
+ '(mode-line-format nil)
  '(ns-alternate-modifier (quote hyper))
  '(ns-tool-bar-display-mode (quote both) t)
  '(ns-tool-bar-size-mode (quote regular) t)
  '(org-agenda-files
    (quote
-    ("~/Dropbox/notes/emacs.org" "~/Dropbox/notes/flocktory.org" "~/Dropbox/notes/notes.org" "~/Dropbox/notes/captures.org" "~/Dropbox/notes/tasks.org")))
+    ("~/Dropbox/notes/links.org" "~/Dropbox/notes/emacs.org" "~/Dropbox/notes/flocktory.org" "~/Dropbox/notes/notes.org" "~/Dropbox/notes/captures.org" "~/Dropbox/notes/tasks.org")))
  '(safe-local-variable-values
    (quote
-    ((encoding . utf-8)
+    ((whitespace-style face tabs trailing lines-tail)
+     (encoding . utf-8)
      (eval font-lock-add-keywords nil
            (\`
             (((\,
@@ -43,7 +46,6 @@
      (ruby-compilation-executable . "rbx")
      (ruby-compilation-executable . "jruby"))))
  '(scroll-bar-mode nil)
- '(show-paren-mode nil)
  '(sml/mule-info nil)
  '(tool-bar-mode nil))
 (custom-set-faces
