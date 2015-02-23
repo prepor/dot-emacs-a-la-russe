@@ -10,4 +10,4 @@
 (el-get 'sync 'org-mode)
 
 (require 'org)
-(org-babel-load-file "/Users/prepor/.emacs.d/init-org.org")
+(org-babel-load-file "~/.emacs.d/init-org.org")

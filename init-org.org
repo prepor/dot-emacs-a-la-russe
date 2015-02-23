@@ -197,6 +197,7 @@
                      idomenu undo-tree key-chord ace-jump-mode
                      auto-complete rainbow-delimiters smartparens
                      htmlize
+                     haskell-mode structured-haskell-mode
                      cl-lib
                      rvm inf-ruby rspec-mode
                      multiple-cursors clj-refactor
@@ -625,6 +626,61 @@ inputenc и fontenc убираем из дефолтных пакетов
   (when (memq window-system '(mac ns))
     (exec-path-from-shell-initialize))
 #+END_SRC
+** haskell
+#+BEGIN_SRC emacs-lisp
+  (custom-set-variables '(haskell-process-type 'cabal-repl))
+  (add-hook 'haskell-mode-hook 'interactive-haskell-mode)
+  (add-hook 'haskell-mode-hook 'structured-haskell-mode)
+
+  (defun my/haskell-hoogle ()
+    (let ((current-prefix-arg t))
+      (call-interactively 'haskell-hoogle)))
+
+  (eval-after-load "haskell-mode"
+    '(progn
+       ;; (set-face-background 'shm-current-face "#eee8d5")
+       ;; (set-face-background 'shm-quarantine-face "lemonchiffon")
+       (require 'shm)
+       (set-face-background 'shm-current-face "#eee8d5")
+       (set-face-background 'shm-quarantine-face "lemonchiffon")
+
+       (define-key haskell-mode-map (kbd "M-.") 'haskell-mode-tag-find)
+       (define-key haskell-mode-map (kbd "C-c C-l") 'haskell-process-load-or-reload)
+       (define-key haskell-mode-map (kbd "C-`") 'haskell-interactive-bring)
+       (define-key haskell-mode-map (kbd "C-c C-t") 'haskell-process-do-type)
+       (define-key haskell-mode-map (kbd "C-c C-i") 'haskell-process-do-info)
+       (define-key haskell-mode-map (kbd "C-c C-c") 'haskell-process-cabal-build)
+       (define-key haskell-mode-map (kbd "C-c C-k") 'haskell-interactive-mode-clear)
+       (define-key haskell-mode-map (kbd "C-c c") 'haskell-process-cabal)
+       (define-key haskell-mode-map (kbd "SPC") 'haskell-mode-contextual-space)
+
+       (define-key haskell-mode-map (kbd "C-c C-h") 'my/haskell-hoogle)
+
+       ;; (define-key haskell-mode-map (kbd "C-x C-d") nil)
+       ;; (define-key haskell-mode-map (kbd "C-c C-z") 'haskell-interactive-switch)
+       ;; (define-key haskell-mode-map (kbd "C-c C-l") 'haskell-process-load-file)
+       ;; (define-key haskell-mode-map (kbd "C-c C-b") 'haskell-interactive-switch)
+       ;; (define-key haskell-mode-map (kbd "C-c C-t") 'haskell-process-do-type)
+       ;; (define-key haskell-mode-map (kbd "C-c C-i") 'haskell-process-do-info)
+       ;; (define-key haskell-mode-map (kbd "C-c M-.") nil)
+       ;; (define-key haskell-mode-map (kbd "C-c C-d") nil)
+       ))
+
+
+
+  (let ((my-cabal-path (expand-file-name "~/Library/Haskell/bin")))
+    (setenv "PATH" (concat my-cabal-path ":" (getenv "PATH")))
+    (add-to-list 'exec-path my-cabal-path))
+
+  (custom-set-variables '(haskell-tags-on-save t))
+
+  ;; (autoload 'ghc-init "ghc" nil t)
+  ;; (autoload 'ghc-debug "ghc" nil t)
+  ;; (add-hook 'haskell-mode-hook (lambda () (ghc-init)))
+#+END_SRC
+
+#+RESULTS:
+
 ** flycheck
 #+BEGIN_SRC emacs-lisp
   ;; (setq flycheck-checkers '(ruby bash go-goflymake))
@@ -634,7 +690,7 @@ inputenc и fontenc убираем из дефолтных пакетов
     (when errors
       (flycheck-list-errors)))
 
-  (setq flycheck-display-errors-function #'my/flycheck-display-error-messages)
+  ;; (setq flycheck-display-errors-function #'my/flycheck-display-error-messages)
 #+END_SRC
 ** helm
 #+BEGIN_SRC emacs-lisp
@@ -743,8 +799,8 @@ helm-compile-source--helm-headline, которую использует напр
     :name "flocktory-app"
     :command "rails"
     :args '("s")
-    :path '("/Users/ios/work/flocktory-app/bin")
-    :cwd "/Users/ios/work/flocktory-app"
+    :path '("~/work/flocktory-app/bin")
+    :cwd "~/work/flocktory-app"
     :tags '(work ruby))
 
   (prodigy-define-service
